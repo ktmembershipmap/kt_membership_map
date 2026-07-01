@@ -29,7 +29,8 @@
     background: #fff; color: #555; cursor: pointer; transition: all 0.15s;
   }
   .chip.active { background: #E8003D; color: #fff; border-color: #E8003D; }
-  #map { width: 100%; height: 380px; border-radius: 12px; border: 1px solid #ddd; margin-bottom: 16px; background: #eee; }
+  #map { width: 100%; height: 380px; border-radius: 12px; border: 1px solid #ddd; margin-bottom: 16px; background: #eee; position: relative; }
+  .map-fallback-note { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; text-align:center; padding:16px; font-size:13px; color:#999; }
   .count-info { font-size: 14px; color: #555; margin-bottom: 10px; }
   .result-list { display: flex; flex-direction: column; gap: 8px; }
   .result-card {
@@ -48,6 +49,12 @@
   .result-addr { font-size: 12px; color: #888; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .benefit { font-size: 12px; color: #E8003D; font-weight: bold; white-space: nowrap; flex-shrink: 0; }
   .empty, .loading-msg { text-align: center; padding: 40px 0; color: #999; font-size: 14px; }
+ 
+  /* 지도 위 카테고리 배지 마커 미리보기용 (실제 지도가 없을 때 레이아웃 데모) */
+  .demo-marker-preview { display:flex; flex-wrap:wrap; gap:14px; justify-content:center; margin-top:10px; }
+  .demo-marker { display:flex; flex-direction:column; align-items:center; }
+  .demo-badge { font-size:11px; font-weight:bold; padding:4px 9px; border-radius:20px; white-space:nowrap; box-shadow:0 2px 5px rgba(0,0,0,0.25); border:2px solid #fff; }
+  .demo-tail { width:0; height:0; border-left:5px solid transparent; border-right:5px solid transparent; }
 </style>
 </head>
 <body>
@@ -57,7 +64,7 @@
     <span class="title">내 동네 멤버십 혜택 찾기</span>
   </div>
   <div class="search-row">
-    <input type="text" id="addrInput" placeholder="동 이름을 입력하세요 (예: 역삼동, 합정동)" />
+    <input type="text" id="addrInput" placeholder="동 이름을 입력하세요 (예: 역삼동, 합정동)" value="역삼동" />
     <button id="searchBtn" onclick="doSearch()">검색</button>
   </div>
   <div class="filter-row" id="filterRow">
@@ -68,7 +75,20 @@
     <span class="chip" data-cat="커피" onclick="filterCat(this)">카페</span>
     <span class="chip" data-cat="편의점" onclick="filterCat(this)">편의점</span>
   </div>
-  <div id="map"></div>
+  <div id="map">
+    <div class="map-fallback-note" id="mapFallback">
+      이 미리보기 창은 카카오 개발자 콘솔에 등록되지 않은 도메인이라<br>
+      실제 지도 타일은 뜨지 않습니다. (GitHub Pages에 올리면 정상 작동)<br><br>
+      대신 아래에 새로 적용될 <strong>카테고리 배지 마커</strong> 디자인을 미리 보여드립니다 ↓
+      <div class="demo-marker-preview">
+        <div class="demo-marker"><span class="demo-badge" style="background:#185FA5;color:#fff;">영화</span><span class="demo-tail" style="border-top:6px solid #185FA5;"></span></div>
+        <div class="demo-marker"><span class="demo-badge" style="background:#3B6D11;color:#fff;">베이커리</span><span class="demo-tail" style="border-top:6px solid #3B6D11;"></span></div>
+        <div class="demo-marker"><span class="demo-badge" style="background:#854F0B;color:#fff;">아이스크림</span><span class="demo-tail" style="border-top:6px solid #854F0B;"></span></div>
+        <div class="demo-marker"><span class="demo-badge" style="background:#534AB7;color:#fff;">커피</span><span class="demo-tail" style="border-top:6px solid #534AB7;"></span></div>
+        <div class="demo-marker"><span class="demo-badge" style="background:#0F6E56;color:#fff;">편의점</span><span class="demo-tail" style="border-top:6px solid #0F6E56;"></span></div>
+      </div>
+    </div>
+  </div>
   <div id="resultArea">
     <div class="empty">동 이름을 입력하고 검색하세요</div>
   </div>
@@ -86,7 +106,15 @@ const PARTNERS = [
   { brand: 'GS25',       cat: '편의점',    benefit: '1+1 / 2+1 쿠폰' },
   { brand: 'CU',         cat: '편의점',    benefit: '1+1 / 2+1 쿠폰' },
 ];
-
+ 
+const CAT_COLORS = {
+  '영화':      { bg: '#185FA5', text: '#fff' },
+  '베이커리':  { bg: '#3B6D11', text: '#fff' },
+  '아이스크림': { bg: '#854F0B', text: '#fff' },
+  '커피':      { bg: '#534AB7', text: '#fff' },
+  '편의점':    { bg: '#0F6E56', text: '#fff' }
+};
+ 
 const ALLOWED_AREAS = [
   '마포구','은평구','종로구','서대문구','용산구','중구','성북구',
   '강북구','도봉구','노원구','중랑구','광진구',
@@ -94,34 +122,61 @@ const ALLOWED_AREAS = [
   '파주시','연천군','포천시','가평군','양평군',
   '강원도','강원특별자치도'
 ];
-
+ 
 function isAllowedArea(addr) {
   return ALLOWED_AREAS.some(area => addr.includes(area));
 }
-
+ 
 let map, ps, geocoder;
 let markers = [];
 let allResults = [];
 let currentCat = '전체';
-
+let mapReady = false;
+ 
 window.onload = function () {
-  const mapOption = {
-    center: new kakao.maps.LatLng(37.5665, 126.9780),
-    level: 5
-  };
-  map = new kakao.maps.Map(document.getElementById('map'), mapOption);
-  ps = new kakao.maps.services.Places();
-  geocoder = new kakao.maps.services.Geocoder();
+  try {
+    if (typeof kakao === 'undefined') throw new Error('kakao sdk not loaded');
+    const mapOption = {
+      center: new kakao.maps.LatLng(37.5665, 126.9780),
+      level: 5
+    };
+    map = new kakao.maps.Map(document.getElementById('map'), mapOption);
+    ps = new kakao.maps.services.Places();
+    geocoder = new kakao.maps.services.Geocoder();
+    mapReady = true;
+    const fb = document.getElementById('mapFallback');
+    if (fb) fb.remove();
+  } catch (e) {
+    mapReady = false;
+    console.warn('카카오맵 SDK 로드 실패 (미리보기 환경 도메인 미등록):', e);
+  }
 };
-
+ 
 function clearMarkers() {
   markers.forEach(m => m.setMap(null));
   markers = [];
 }
-
+ 
 function doSearch() {
   const input = document.getElementById('addrInput').value.trim();
   if (!input) { alert('동 이름을 입력해주세요.'); return; }
+ 
+  if (!mapReady) {
+    // 미리보기 환경: 지도 SDK가 없으므로 더미 데이터로 리스트만 데모
+    document.getElementById('resultArea').innerHTML = '<div class="loading-msg">위치를 찾는 중입니다...</div>';
+    setTimeout(() => {
+      allResults = PARTNERS.map((p, i) => ({
+        name: p.brand + ' ' + input + '점',
+        address: '서울 ' + input + ' 어딘가 ' + (i + 1),
+        lat: 37.5665 + (Math.random() - 0.5) * 0.01,
+        lng: 126.9780 + (Math.random() - 0.5) * 0.01,
+        cat: p.cat, brand: p.brand, benefit: p.benefit
+      }));
+      renderResults();
+    }, 400);
+    return;
+  }
+ 
   const searchAddr = (input.includes('서울')||input.includes('경기')||input.includes('인천')||input.includes('강원'))
     ? input : '서울 ' + input;
   const btn = document.getElementById('searchBtn');
@@ -152,13 +207,13 @@ function doSearch() {
     }
   });
 }
-
+ 
 function showNotSupported(btn, input) {
   btn.disabled = false; btn.textContent = '검색';
   document.getElementById('resultArea').innerHTML =
     '<div class="empty">현재 서비스 지원 지역이 아닙니다.<br>(서울 일부 지역, 경기 북부, 강원도에서 이용 가능합니다)</div>';
 }
-
+ 
 function searchAllPartners(coords) {
   clearMarkers(); allResults = [];
   let completed = 0;
@@ -179,33 +234,59 @@ function searchAllPartners(coords) {
     }, { location: coords, radius: 1500, sort: kakao.maps.services.SortBy.DISTANCE });
   });
 }
-
+ 
 function finishSearch() {
   const btn = document.getElementById('searchBtn');
   btn.disabled = false; btn.textContent = '검색';
   renderMarkers(); renderResults();
 }
-
+ 
 function renderMarkers() {
+  if (!mapReady) return;
   clearMarkers();
   const filtered = currentCat === '전체' ? allResults : allResults.filter(r => r.cat === currentCat);
+ 
   filtered.forEach(r => {
-    const marker = new kakao.maps.Marker({ position: new kakao.maps.LatLng(r.lat, r.lng), map });
+    const color = CAT_COLORS[r.cat] || { bg: '#E8003D', text: '#fff' };
+    const position = new kakao.maps.LatLng(r.lat, r.lng);
+ 
+    const content = document.createElement('div');
+    content.style.cssText = 'position:relative;transform:translate(-50%,-100%);cursor:pointer;';
+    content.innerHTML =
+      '<div style="background:' + color.bg + ';color:' + color.text + ';' +
+      'font-size:11px;font-weight:bold;padding:4px 9px;border-radius:20px;' +
+      'white-space:nowrap;box-shadow:0 2px 5px rgba(0,0,0,0.25);border:2px solid #fff;">' +
+      r.cat + '</div>' +
+      '<div style="width:0;height:0;margin:0 auto;' +
+      'border-left:5px solid transparent;border-right:5px solid transparent;' +
+      'border-top:6px solid ' + color.bg + ';"></div>';
+ 
+    const overlay = new kakao.maps.CustomOverlay({
+      position: position,
+      content: content,
+      yAnchor: 1
+    });
+    overlay.setMap(map);
+ 
     const iw = new kakao.maps.InfoWindow({
       content: '<div style="padding:8px 10px;font-size:12px;width:180px;"><strong>' + r.name + '</strong><br><span style="color:#E8003D;">' + r.benefit + '</span></div>'
     });
-    kakao.maps.event.addListener(marker, 'click', function() { iw.open(map, marker); });
-    markers.push(marker);
+ 
+    content.addEventListener('click', function () {
+      iw.open(map, new kakao.maps.Marker({ position: position, map: map, opacity: 0 }));
+    });
+ 
+    markers.push(overlay);
   });
 }
-
+ 
 function filterCat(el) {
   document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
   el.classList.add('active');
   currentCat = el.dataset.cat;
   if (allResults.length > 0) { renderMarkers(); renderResults(); }
 }
-
+ 
 function renderResults() {
   const resultArea = document.getElementById('resultArea');
   const filtered = currentCat === '전체' ? allResults : allResults.filter(r => r.cat === currentCat);
@@ -217,16 +298,17 @@ function renderResults() {
       '<div class="result-card" onclick="focusMarker(' + r.lat + ',' + r.lng + ')">'
       + '<span class="cat-badge cat-' + r.cat + '">' + r.cat + '</span>'
       + '<div class="result-info"><div class="result-name">' + r.name + '</div>'
-      + '<div class="result-addr">' + r.address + '</div></div>'
+      + '<div class to="result-addr">' + r.address + '</div></div>'
       + '<span class="benefit">' + r.benefit + '</span></div>'
     ).join('') + '</div>';
 }
-
+ 
 function focusMarker(lat, lng) {
+  if (!mapReady) return;
   map.setCenter(new kakao.maps.LatLng(lat, lng));
   map.setLevel(3);
 }
-
+ 
 document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('addrInput').addEventListener('keypress', function(e) {
     if (e.key === 'Enter') doSearch();
@@ -234,4 +316,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 </body>
-</html>ㅁ
+</html>
