@@ -29,6 +29,16 @@
     background: #fff; color: #555; cursor: pointer; transition: all 0.15s;
   }
   .chip.active { background: #E8003D; color: #fff; border-color: #E8003D; }
+  .tier-row { display: flex; gap: 6px; margin-bottom: 10px; }
+  .tier-chip {
+    font-size: 13px; padding: 6px 18px; border-radius: 20px; border: 1px solid #ddd;
+    background: #fff; color: #555; cursor: pointer; font-weight: bold; transition: all 0.15s;
+  }
+  .tier-chip.active { background: #222; color: #fff; border-color: #222; }
+  .vvip-tag {
+    font-size: 10px; font-weight: bold; color: #8a5a00; background: #FFF3D6;
+    padding: 2px 7px; border-radius: 8px; margin-left: 6px; flex-shrink: 0;
+  }
   #map { width: 100%; height: 380px; border-radius: 12px; border: 1px solid #ddd; margin-bottom: 16px; background: #eee; }
   .count-info { font-size: 14px; color: #555; margin-bottom: 10px; }
   .result-list { display: flex; flex-direction: column; gap: 8px; }
@@ -60,6 +70,11 @@
     <input type="text" id="addrInput" placeholder="동 이름을 입력하세요 (예: 역삼동, 합정동)" />
     <button id="searchBtn" onclick="doSearch()">검색</button>
   </div>
+  <div class="tier-row" id="tierRow">
+    <span class="tier-chip active" data-tier="전체" onclick="filterTier(this)">전체</span>
+    <span class="tier-chip" data-tier="VVIP" onclick="filterTier(this)">VVIP</span>
+    <span class="tier-chip" data-tier="일반" onclick="filterTier(this)">일반</span>
+  </div>
   <div class="filter-row" id="filterRow">
     <span class="chip active" data-cat="전체" onclick="filterCat(this)">전체</span>
     <span class="chip" data-cat="영화" onclick="filterCat(this)">영화관</span>
@@ -76,15 +91,23 @@
 <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=287151200f1ba977c2dc8bf090f28f39&libraries=services"></script>
 <script>
 const PARTNERS = [
-  { brand: 'CGV',        cat: '영화',      benefit: 'VIP 최대 6,000원 할인' },
-  { brand: '롯데시네마',  cat: '영화',      benefit: 'VIP 최대 5,000원 할인' },
-  { brand: '메가박스',    cat: '영화',      benefit: 'VIP 4,000원 할인' },
-  { brand: '파리바게뜨',  cat: '베이커리',  benefit: '최대 30% 할인' },
-  { brand: '뚜레쥬르',    cat: '베이커리',  benefit: '최대 30% 할인' },
-  { brand: '배스킨라빈스', cat: '아이스크림', benefit: '20% 할인' },
-  { brand: '이디야커피',  cat: '커피',      benefit: '10% 할인' },
-  { brand: 'GS25',       cat: '편의점',    benefit: '1+1 / 2+1 쿠폰' },
-  { brand: 'CU',         cat: '편의점',    benefit: '1+1 / 2+1 쿠폰' },
+  // 일반
+  { brand: 'CGV',          cat: '영화',      benefit: 'VIP 최대 6,000원 할인',            tier: '일반' },
+  { brand: '롯데시네마',   cat: '영화',      benefit: 'VIP 최대 5,000원 할인',            tier: '일반' },
+  { brand: '메가박스',     cat: '영화',      benefit: 'VIP 4,000원 할인',                 tier: '일반' },
+  { brand: '파리바게뜨',   cat: '베이커리',  benefit: '최대 30% 할인',                    tier: '일반' },
+  { brand: '뚜레쥬르',     cat: '베이커리',  benefit: '최대 30% 할인',                    tier: '일반' },
+  { brand: '배스킨라빈스', cat: '아이스크림', benefit: '20% 할인',                         tier: '일반' },
+  { brand: '이디야커피',   cat: '커피',      benefit: '10% 할인',                         tier: '일반' },
+  { brand: 'GS25',         cat: '편의점',    benefit: '1+1 / 2+1 쿠폰',                   tier: '일반' },
+  { brand: 'CU',           cat: '편의점',    benefit: '1+1 / 2+1 쿠폰',                   tier: '일반' },
+  // VVIP
+  { brand: '롯데시네마',   cat: '영화',      benefit: '영화 무료 (생일 당월 팝콘 포함)',    tier: 'VVIP' },
+  { brand: '던킨',         cat: '베이커리',  benefit: '아메리카노(S)＋글레이즈드 무료',      tier: 'VVIP' },
+  { brand: '배스킨라빈스', cat: '아이스크림', benefit: '레디팩 무료 / 아이스크림 6종 50%',   tier: 'VVIP' },
+  { brand: '스타벅스',     cat: '커피',      benefit: '아메리카노(S) 무료 or 4천원 할인',    tier: 'VVIP' },
+  { brand: '할리스',       cat: '커피',      benefit: '커피 2잔 ＋ 휘낭시에 2개 세트 무료',  tier: 'VVIP' },
+  { brand: '메가MGC커피',  cat: '커피',      benefit: '아메리카노(ICE/HOT) 2잔 무료',       tier: 'VVIP' },
 ];
 
 const CAT_COLORS = {
@@ -111,6 +134,7 @@ let map, ps, geocoder;
 let markers = [];
 let allResults = [];
 let currentCat = '전체';
+let currentTier = '전체';
 let openInfoWindow = null;
 let openInfoTarget = null;
 
@@ -132,6 +156,13 @@ window.onload = function () {
     }
   });
 };
+
+function getFilteredResults() {
+  return allResults.filter(r =>
+    (currentCat === '전체' || r.cat === currentCat) &&
+    (currentTier === '전체' || r.tier === currentTier)
+  );
+}
 
 function clearMarkers() {
   markers.forEach(m => m.setMap(null));
@@ -190,7 +221,7 @@ function searchAllPartners(coords) {
             name: place.place_name,
             address: place.road_address_name || place.address_name,
             lat: place.y, lng: place.x,
-            cat: partner.cat, brand: partner.brand, benefit: partner.benefit
+            cat: partner.cat, brand: partner.brand, benefit: partner.benefit, tier: partner.tier
           });
         });
       }
@@ -209,7 +240,7 @@ function renderMarkers() {
   clearMarkers();
   openInfoWindow = null;
   openInfoTarget = null;
-  const filtered = currentCat === '전체' ? allResults : allResults.filter(r => r.cat === currentCat);
+  const filtered = getFilteredResults();
 
   filtered.forEach(r => {
     const color = CAT_COLORS[r.cat] || { bg: '#E8003D', text: '#fff' };
@@ -218,6 +249,7 @@ function renderMarkers() {
     const content = document.createElement('div');
     content.style.cssText = 'position:relative;transform:translate(-50%,-100%);cursor:pointer;';
     content.innerHTML =
+      '<div style="position:absolute;top:-14px;left:-18px;right:-18px;bottom:-10px;"></div>' +
       '<div style="background:' + color.bg + ';color:' + color.text + ';' +
       'font-size:11px;font-weight:bold;padding:4px 9px;border-radius:20px;' +
       'white-space:nowrap;box-shadow:0 2px 5px rgba(0,0,0,0.25);border:2px solid #fff;">' +
@@ -267,16 +299,23 @@ function filterCat(el) {
   if (allResults.length > 0) { renderMarkers(); renderResults(); }
 }
 
+function filterTier(el) {
+  document.querySelectorAll('.tier-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  currentTier = el.dataset.tier;
+  if (allResults.length > 0) { renderMarkers(); renderResults(); }
+}
+
 function renderResults() {
   const resultArea = document.getElementById('resultArea');
-  const filtered = currentCat === '전체' ? allResults : allResults.filter(r => r.cat === currentCat);
+  const filtered = getFilteredResults();
   if (filtered.length === 0) {
     resultArea.innerHTML = '<div class="empty">주변에서 제휴처를 찾지 못했습니다.</div>'; return;
   }
   resultArea.innerHTML = '<div class="result-list"><p class="count-info"><strong>' + filtered.length + '개</strong>의 제휴처를 찾았습니다</p>'
     + filtered.map(r =>
       '<div class="result-card" onclick="focusMarker(' + r.lat + ',' + r.lng + ')">'
-      + '<span class="cat-badge cat-' + r.cat + '">' + r.cat + '</span>'
+      + '<span class="cat-badge cat-' + r.cat + '">' + r.cat + (r.tier === 'VVIP' ? '<span class="vvip-tag">VVIP</span>' : '') + '</span>'
       + '<div class="result-info"><div class="result-name">' + r.name + '</div>'
       + '<div class="result-addr">' + r.address + '</div></div>'
       + '<span class="benefit">' + r.benefit + '</span></div>'
