@@ -68,7 +68,7 @@
     <span class="title">내 동네 멤버십 혜택 찾기</span>
   </div>
   <div class="search-row">
-    <input type="text" id="addrInput" placeholder="동 이름을 입력하세요 (예: 역삼동, 합정동)" />
+    <input type="text" id="addrInput" placeholder="동 이름을 입력하세요 (예: 구의동)" />
     <button id="searchBtn" onclick="doSearch()">검색</button>
   </div>
   <div class="tier-row" id="tierRow">
@@ -188,34 +188,63 @@ function clearMarkers() {
 function doSearch() {
   const input = document.getElementById('addrInput').value.trim();
   if (!input) { alert('동 이름을 입력해주세요.'); return; }
-  const searchAddr = (input.includes('서울')||input.includes('경기')||input.includes('인천')||input.includes('강원'))
-    ? input : '서울 ' + input;
   const btn = document.getElementById('searchBtn');
   btn.disabled = true;
   btn.textContent = '검색 중...';
   document.getElementById('resultArea').innerHTML = '<div class="loading-msg">위치를 찾는 중입니다...</div>';
-  geocoder.addressSearch(searchAddr, function(result, status) {
+
+  const hasRegion = input.includes('서울')||input.includes('경기')||input.includes('인천')||input.includes('강원');
+  // 지역명이 없으면 경기/서울/강원 순서로 다 시도 (의정부시/포천시 등 '시' 생략 입력도 커버)
+  const candidates = hasRegion ? [input] : [input, '경기 ' + input, '서울 ' + input, '강원 ' + input];
+
+  tryGeocode(candidates, 0, btn, input, { foundNotAllowed: false });
+}
+
+function tryGeocode(candidates, idx, btn, originalInput, state) {
+  if (idx >= candidates.length) {
+    tryKeyword(candidates, 0, btn, originalInput, state);
+    return;
+  }
+  geocoder.addressSearch(candidates[idx], function(result, status) {
     if (status === kakao.maps.services.Status.OK) {
       const fullAddr = result[0].address_name || '';
-      if (!isAllowedArea(fullAddr)) { showNotSupported(btn, input); return; }
-      const coords = new kakao.maps.LatLng(result[0].y, result[0].x);
-      map.setCenter(coords); map.setLevel(5);
-      searchAllPartners(coords);
-    } else {
-      ps.keywordSearch(searchAddr, function(data, status2) {
-        if (status2 === kakao.maps.services.Status.OK && data.length > 0) {
-          const fullAddr = data[0].address_name || '';
-          if (!isAllowedArea(fullAddr)) { showNotSupported(btn, input); return; }
-          const coords = new kakao.maps.LatLng(data[0].y, data[0].x);
-          map.setCenter(coords); map.setLevel(5);
-          searchAllPartners(coords);
-        } else {
-          btn.disabled = false; btn.textContent = '검색';
-          document.getElementById('resultArea').innerHTML =
-            '<div class="empty">"' + input + '" 위치를 찾을 수 없습니다.</div>';
-        }
-      });
+      if (isAllowedArea(fullAddr)) {
+        const coords = new kakao.maps.LatLng(result[0].y, result[0].x);
+        map.setCenter(coords); map.setLevel(5);
+        searchAllPartners(coords);
+        return;
+      } else {
+        state.foundNotAllowed = true;
+      }
     }
+    tryGeocode(candidates, idx + 1, btn, originalInput, state);
+  });
+}
+
+function tryKeyword(candidates, idx, btn, originalInput, state) {
+  if (idx >= candidates.length) {
+    if (state.foundNotAllowed) {
+      showNotSupported(btn, originalInput);
+    } else {
+      btn.disabled = false; btn.textContent = '검색';
+      document.getElementById('resultArea').innerHTML =
+        '<div class="empty">"' + originalInput + '" 위치를 찾을 수 없습니다.</div>';
+    }
+    return;
+  }
+  ps.keywordSearch(candidates[idx], function(data, status2) {
+    if (status2 === kakao.maps.services.Status.OK && data.length > 0) {
+      const fullAddr = data[0].address_name || '';
+      if (isAllowedArea(fullAddr)) {
+        const coords = new kakao.maps.LatLng(data[0].y, data[0].x);
+        map.setCenter(coords); map.setLevel(5);
+        searchAllPartners(coords);
+        return;
+      } else {
+        state.foundNotAllowed = true;
+      }
+    }
+    tryKeyword(candidates, idx + 1, btn, originalInput, state);
   });
 }
 
