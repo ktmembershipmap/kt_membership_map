@@ -86,7 +86,7 @@ const PARTNERS = [
   { brand: 'GS25',       cat: '편의점',    benefit: '1+1 / 2+1 쿠폰' },
   { brand: 'CU',         cat: '편의점',    benefit: '1+1 / 2+1 쿠폰' },
 ];
- 
+
 const ALLOWED_AREAS = [
   '마포구','은평구','종로구','서대문구','용산구','중구','성북구',
   '강북구','도봉구','노원구','중랑구','광진구',
@@ -94,16 +94,16 @@ const ALLOWED_AREAS = [
   '파주시','연천군','포천시','가평군','양평군',
   '강원도','강원특별자치도'
 ];
- 
+
 function isAllowedArea(addr) {
   return ALLOWED_AREAS.some(area => addr.includes(area));
 }
- 
+
 let map, ps, geocoder;
 let markers = [];
 let allResults = [];
 let currentCat = '전체';
- 
+
 window.onload = function () {
   const mapOption = {
     center: new kakao.maps.LatLng(37.5665, 126.9780),
@@ -113,12 +113,12 @@ window.onload = function () {
   ps = new kakao.maps.services.Places();
   geocoder = new kakao.maps.services.Geocoder();
 };
- 
+
 function clearMarkers() {
   markers.forEach(m => m.setMap(null));
   markers = [];
 }
- 
+
 function doSearch() {
   const input = document.getElementById('addrInput').value.trim();
   if (!input) { alert('동 이름을 입력해주세요.'); return; }
@@ -152,13 +152,13 @@ function doSearch() {
     }
   });
 }
- 
+
 function showNotSupported(btn, input) {
   btn.disabled = false; btn.textContent = '검색';
   document.getElementById('resultArea').innerHTML =
     '<div class="empty">현재 서비스 지원 지역이 아닙니다.<br>(서울 일부 지역, 경기 북부, 강원도에서 이용 가능합니다)</div>';
 }
- 
+
 function searchAllPartners(coords) {
   clearMarkers(); allResults = [];
   let completed = 0;
@@ -179,13 +179,13 @@ function searchAllPartners(coords) {
     }, { location: coords, radius: 1500, sort: kakao.maps.services.SortBy.DISTANCE });
   });
 }
- 
+
 function finishSearch() {
   const btn = document.getElementById('searchBtn');
   btn.disabled = false; btn.textContent = '검색';
   renderMarkers(); renderResults();
 }
- 
+
 function renderMarkers() {
   clearMarkers();
   const filtered = currentCat === '전체' ? allResults : allResults.filter(r => r.cat === currentCat);
@@ -198,14 +198,14 @@ function renderMarkers() {
     markers.push(marker);
   });
 }
- 
+
 function filterCat(el) {
   document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
   el.classList.add('active');
   currentCat = el.dataset.cat;
   if (allResults.length > 0) { renderMarkers(); renderResults(); }
 }
- 
+
 function renderResults() {
   const resultArea = document.getElementById('resultArea');
   const filtered = currentCat === '전체' ? allResults : allResults.filter(r => r.cat === currentCat);
@@ -221,12 +221,12 @@ function renderResults() {
       + '<span class="benefit">' + r.benefit + '</span></div>'
     ).join('') + '</div>';
 }
- 
+
 function focusMarker(lat, lng) {
   map.setCenter(new kakao.maps.LatLng(lat, lng));
   map.setLevel(3);
 }
- 
+
 document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('addrInput').addEventListener('keypress', function(e) {
     if (e.key === 'Enter') doSearch();
@@ -234,4 +234,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 </body>
-</html>
+</html>ㅁ
