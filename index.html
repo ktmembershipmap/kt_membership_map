@@ -254,6 +254,9 @@ function finishSearch() {
 
 function renderMarkers() {
   clearMarkers();
+  if (openInfoWindow) {
+    openInfoWindow.close();
+  }
   openInfoWindow = null;
   openInfoTarget = null;
   const filtered = getFilteredResults();
