@@ -53,6 +53,7 @@
   .cat-아이스크림 { background: #FAEEDA; color: #854F0B; }
   .cat-커피 { background: #EEEDFE; color: #534AB7; }
   .cat-편의점 { background: #E1F5EE; color: #0F6E56; }
+  .cat-외식 { background: #FAECE7; color: #712B13; }
   .result-info { flex: 1; min-width: 0; }
   .result-name { font-size: 14px; font-weight: bold; color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .result-addr { font-size: 12px; color: #888; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -82,6 +83,7 @@
     <span class="chip" data-cat="아이스크림" onclick="filterCat(this)">아이스크림</span>
     <span class="chip" data-cat="커피" onclick="filterCat(this)">카페</span>
     <span class="chip" data-cat="편의점" onclick="filterCat(this)">편의점</span>
+    <span class="chip" data-cat="외식" onclick="filterCat(this)">외식</span>
   </div>
   <div id="map"></div>
   <div id="resultArea">
@@ -92,15 +94,23 @@
 <script>
 const PARTNERS = [
   // 일반
-  { brand: 'CGV',          cat: '영화',      benefit: 'VIP 최대 6,000원 할인',            tier: '일반' },
-  { brand: '롯데시네마',   cat: '영화',      benefit: 'VIP 최대 5,000원 할인',            tier: '일반' },
-  { brand: '메가박스',     cat: '영화',      benefit: 'VIP 4,000원 할인',                 tier: '일반' },
-  { brand: '파리바게뜨',   cat: '베이커리',  benefit: '최대 30% 할인',                    tier: '일반' },
-  { brand: '뚜레쥬르',     cat: '베이커리',  benefit: '최대 30% 할인',                    tier: '일반' },
-  { brand: '배스킨라빈스', cat: '아이스크림', benefit: '20% 할인',                         tier: '일반' },
-  { brand: '이디야커피',   cat: '커피',      benefit: '10% 할인',                         tier: '일반' },
-  { brand: 'GS25',         cat: '편의점',    benefit: '1+1 / 2+1 쿠폰',                   tier: '일반' },
-  { brand: 'CU',           cat: '편의점',    benefit: '1+1 / 2+1 쿠폰',                   tier: '일반' },
+  { brand: '파리바게뜨',   cat: '베이커리',  benefit: '1,000원당 50원 이상 할인',                          tier: '일반' },
+  { brand: '뚜레쥬르',     cat: '베이커리',  benefit: '1,000원당 100원 이상 할인',                         tier: '일반' },
+  { brand: '파리크라상',   cat: '베이커리',  benefit: '1,000원당 50원 이상 할인',                          tier: '일반' },
+  { brand: '배스킨라빈스', cat: '아이스크림', benefit: '[고객보답] 50% 할인(최대 5천원) / [생일] 케이크 4천원 할인', tier: '일반' },
+  { brand: '메가MGC커피',  cat: '커피',      benefit: 'ICE 아메리카노 구매 시 500원 할인(3장)',             tier: '일반' },
+  { brand: '스타벅스',     cat: '커피',      benefit: '[상시] 사이즈업',                                   tier: '일반' },
+  { brand: '공차',         cat: '커피',      benefit: '제조음료 구매 시 10% 할인',                          tier: '일반' },
+  { brand: '라그릴리아',   cat: '외식',      benefit: '5% 이상 할인',                                      tier: '일반' },
+  { brand: '샐러디',       cat: '외식',      benefit: '10% 할인쿠폰(최대 2만원)',                          tier: '일반' },
+  { brand: '도미노피자',   cat: '외식',      benefit: '15% 이상 할인',                                     tier: '일반' },
+  { brand: '아웃백',       cat: '외식',      benefit: '5% 이상 할인',                                      tier: '일반' },
+  { brand: '파파존스피자', cat: '외식',      benefit: '15% 이상 할인',                                     tier: '일반' },
+  { brand: 'VIPS',         cat: '외식',      benefit: '5% 이상 할인',                                      tier: '일반' },
+  { brand: '매드포갈릭',   cat: '외식',      benefit: '5% 이상 할인(주문금액 10만원 한도)',                 tier: '일반' },
+  { brand: '피자헛',       cat: '외식',      benefit: '15% 할인',                                          tier: '일반' },
+  { brand: '피자알볼로',   cat: '외식',      benefit: '15% 할인(온라인 주문 시)',                           tier: '일반' },
+  { brand: '미스터피자',   cat: '외식',      benefit: '15% 이상 할인',                                     tier: '일반' },
   // VVIP
   { brand: '롯데시네마',   cat: '영화',      benefit: '영화 무료 (생일 당월 팝콘 포함)',    tier: 'VVIP' },
   { brand: '던킨',         cat: '베이커리',  benefit: '아메리카노(S)＋글레이즈드 무료',      tier: 'VVIP' },
@@ -115,7 +125,8 @@ const CAT_COLORS = {
   '베이커리':  { bg: '#3B6D11', text: '#fff' },
   '아이스크림': { bg: '#854F0B', text: '#fff' },
   '커피':      { bg: '#534AB7', text: '#fff' },
-  '편의점':    { bg: '#0F6E56', text: '#fff' }
+  '편의점':    { bg: '#0F6E56', text: '#fff' },
+  '외식':      { bg: '#993C1D', text: '#fff' }
 };
 
 const ALLOWED_AREAS = [
