@@ -369,9 +369,9 @@ function updateVvipSummary() {
     el.innerHTML = '';
     return;
   }
-  const minOfTop3 = Math.min(...top3.map(t => t[1]));
+  const minOfTop3 = top3.reduce((sum, t) => sum + t[1], 0);
   const names = top3.map(t => t[0]).join(', ');
-  el.innerHTML = '<strong>' + names + '</strong> 등 VVIP 할인금액은 최소 ' + minOfTop3.toLocaleString() + '원입니다.';
+  el.innerHTML = '<strong>' + names + '</strong> 등 이용시 월 VVIP 혜택금액은 최소 ' + minOfTop3.toLocaleString() + '원입니다.';
   el.classList.add('show');
 }
 
