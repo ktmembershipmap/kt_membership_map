@@ -59,6 +59,12 @@
   .result-addr { font-size: 12px; color: #888; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .benefit { font-size: 12px; color: #E8003D; font-weight: bold; white-space: nowrap; flex-shrink: 0; }
   .empty, .loading-msg { text-align: center; padding: 40px 0; color: #999; font-size: 14px; }
+  .vvip-summary {
+    display: none; font-size: 13px; color: #8a5a00; background: #FFF3D6;
+    border: 1px solid #F5DFA0; border-radius: 8px; padding: 8px 12px; margin-bottom: 12px;
+  }
+  .vvip-summary.show { display: block; }
+  .vvip-summary strong { color: #6b4400; }
 </style>
 </head>
 <body>
@@ -85,6 +91,7 @@
     <span class="chip" data-cat="편의점" onclick="filterCat(this)">편의점</span>
     <span class="chip" data-cat="외식" onclick="filterCat(this)">외식</span>
   </div>
+  <div class="vvip-summary" id="vvipSummary"></div>
   <div id="map"></div>
   <div id="resultArea">
     <div class="empty">동 이름을 입력하고 검색하세요</div>
@@ -117,12 +124,12 @@ const PARTNERS = [
   { brand: '이마트24',     cat: '편의점',    benefit: '1,000원당 50원 이상 할인',                          tier: '일반' },
   { brand: 'CU',           cat: '편의점',    benefit: '아침 간편식류 1,000원당 200원 할인',                 tier: '일반' },
   // VVIP
-  { brand: '롯데시네마',   cat: '영화',      benefit: '영화 무료 (생일 당월 팝콘 포함)',    tier: 'VVIP' },
-  { brand: '던킨',         cat: '베이커리',  benefit: '아메리카노(S)＋글레이즈드 무료',      tier: 'VVIP' },
-  { brand: '배스킨라빈스', cat: '아이스크림', benefit: '레디팩 무료 / 아이스크림 6종 50%',   tier: 'VVIP' },
-  { brand: '스타벅스',     cat: '커피',      benefit: '아메리카노(S) 무료 or 4천원 할인',    tier: 'VVIP' },
-  { brand: '할리스',       cat: '커피',      benefit: '커피 2잔 ＋ 휘낭시에 2개 세트 무료',  tier: 'VVIP' },
-  { brand: '메가MGC커피',  cat: '커피',      benefit: '아메리카노(ICE/HOT) 2잔 무료',       tier: 'VVIP' },
+  { brand: '롯데시네마',   cat: '영화',      benefit: '영화 무료 (생일 당월 팝콘 포함)',    tier: 'VVIP', discountAmount: 8500 },
+  { brand: '던킨',         cat: '베이커리',  benefit: '아메리카노(S)＋글레이즈드 무료',      tier: 'VVIP', discountAmount: 4200 },
+  { brand: '배스킨라빈스', cat: '아이스크림', benefit: '레디팩 무료 / 아이스크림 6종 50%',   tier: 'VVIP', discountAmount: 10800 },
+  { brand: '스타벅스',     cat: '커피',      benefit: '아메리카노(S) 무료 or 4천원 할인',    tier: 'VVIP', discountAmount: 4000 },
+  { brand: '할리스',       cat: '커피',      benefit: '커피 2잔 ＋ 휘낭시에 2개 세트 무료',  tier: 'VVIP', discountAmount: 12500 },
+  { brand: '메가MGC커피',  cat: '커피',      benefit: '아메리카노(ICE/HOT) 2잔 무료',       tier: 'VVIP', discountAmount: 6000 },
 ];
 
 const CAT_COLORS = {
@@ -174,10 +181,12 @@ window.onload = function () {
 };
 
 function getFilteredResults() {
-  return allResults.filter(r =>
-    (currentCat === '전체' || r.cat === currentCat) &&
-    (currentTier === '전체' || r.tier === currentTier)
-  );
+  return allResults
+    .filter(r =>
+      (currentCat === '전체' || r.cat === currentCat) &&
+      (currentTier === '전체' || r.tier === currentTier)
+    )
+    .sort((a, b) => (a.tier === 'VVIP' ? 0 : 1) - (b.tier === 'VVIP' ? 0 : 1));
 }
 
 function clearMarkers() {
@@ -266,7 +275,8 @@ function searchAllPartners(coords) {
             name: place.place_name,
             address: place.road_address_name || place.address_name,
             lat: place.y, lng: place.x,
-            cat: partner.cat, brand: partner.brand, benefit: partner.benefit, tier: partner.tier
+            cat: partner.cat, brand: partner.brand, benefit: partner.benefit, tier: partner.tier,
+            discountAmount: partner.discountAmount
           });
         });
       }
@@ -278,7 +288,7 @@ function searchAllPartners(coords) {
 function finishSearch() {
   const btn = document.getElementById('searchBtn');
   btn.disabled = false; btn.textContent = '검색';
-  renderMarkers(); renderResults();
+  renderMarkers(); renderResults(); updateVvipSummary();
 }
 
 function renderMarkers() {
@@ -341,18 +351,42 @@ function renderMarkers() {
   });
 }
 
+function updateVvipSummary() {
+  const el = document.getElementById('vvipSummary');
+  if (!el) return;
+  const visible = getFilteredResults().filter(r => r.tier === 'VVIP' && r.discountAmount);
+
+  const byBrand = {};
+  visible.forEach(r => {
+    if (!byBrand[r.brand] || r.discountAmount > byBrand[r.brand]) {
+      byBrand[r.brand] = r.discountAmount;
+    }
+  });
+  const top3 = Object.entries(byBrand).sort((a, b) => b[1] - a[1]).slice(0, 3);
+
+  if (top3.length === 0) {
+    el.classList.remove('show');
+    el.innerHTML = '';
+    return;
+  }
+  const minOfTop3 = Math.min(...top3.map(t => t[1]));
+  const names = top3.map(t => t[0]).join(', ');
+  el.innerHTML = '<strong>' + names + '</strong> 등 VVIP 할인금액은 최소 ' + minOfTop3.toLocaleString() + '원입니다.';
+  el.classList.add('show');
+}
+
 function filterCat(el) {
   document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
   el.classList.add('active');
   currentCat = el.dataset.cat;
-  if (allResults.length > 0) { renderMarkers(); renderResults(); }
+  if (allResults.length > 0) { renderMarkers(); renderResults(); updateVvipSummary(); }
 }
 
 function filterTier(el) {
   document.querySelectorAll('.tier-chip').forEach(c => c.classList.remove('active'));
   el.classList.add('active');
   currentTier = el.dataset.tier;
-  if (allResults.length > 0) { renderMarkers(); renderResults(); }
+  if (allResults.length > 0) { renderMarkers(); renderResults(); updateVvipSummary(); }
 }
 
 function renderResults() {
