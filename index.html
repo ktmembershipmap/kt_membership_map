@@ -280,6 +280,7 @@ function renderMarkers() {
     // 정보창에 position을 미리 지정 -> 임시 마커 없이 바로 해당 좌표에 열림
     const iw = new kakao.maps.InfoWindow({
       position: position,
+      zIndex: 10,
       content: '<div style="padding:8px 10px;font-size:12px;width:180px;"><strong>' + r.name + '</strong><br><span style="color:#E8003D;">' + r.benefit + '</span></div>'
     });
 
