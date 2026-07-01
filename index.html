@@ -1,1 +1,278 @@
-
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KT 멤버십 우리동네 혜택 지도</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Malgun Gothic', sans-serif; background: #f5f5f7; }
+  .container { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
+  .header { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+  .logo { background: #E8003D; color: #fff; font-size: 14px; font-weight: bold; padding: 5px 12px; border-radius: 6px; }
+  .title { font-size: 18px; font-weight: bold; color: #222; }
+  .search-row { display: flex; gap: 8px; margin-bottom: 14px; }
+  .search-row input {
+    flex: 1; padding: 12px 14px; font-size: 15px; border: 1px solid #ddd;
+    border-radius: 8px; outline: none;
+  }
+  .search-row input:focus { border-color: #E8003D; }
+  .search-row button {
+    padding: 0 22px; font-size: 15px; background: #E8003D; color: #fff;
+    border: none; border-radius: 8px; cursor: pointer; font-weight: bold;
+  }
+  .search-row button:hover { background: #c0002f; }
+  .search-row button:disabled { background: #ccc; cursor: not-allowed; }
+ 
+  .filter-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+  .chip {
+    font-size: 13px; padding: 6px 14px; border-radius: 20px; border: 1px solid #ddd;
+    background: #fff; color: #555; cursor: pointer; transition: all 0.15s;
+  }
+  .chip.active { background: #E8003D; color: #fff; border-color: #E8003D; }
+ 
+  #map { width: 100%; height: 380px; border-radius: 12px; border: 1px solid #ddd; margin-bottom: 16px; background: #eee; }
+ 
+  .count-info { font-size: 14px; color: #555; margin-bottom: 10px; }
+  .result-list { display: flex; flex-direction: column; gap: 8px; }
+  .result-card {
+    background: #fff; border: 1px solid #eee; border-radius: 10px; padding: 12px 16px;
+    display: flex; align-items: center; gap: 12px; cursor: pointer; transition: box-shadow 0.15s;
+  }
+  .result-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .cat-badge { font-size: 11px; padding: 4px 9px; border-radius: 20px; white-space: nowrap; font-weight: bold; flex-shrink: 0; }
+  .cat-영화 { background: #E6F1FB; color: #185FA5; }
+  .cat-베이커리 { background: #EAF3DE; color: #3B6D11; }
+  .cat-아이스크림 { background: #FAEEDA; color: #854F0B; }
+  .cat-커피 { background: #EEEDFE; color: #534AB7; }
+  .cat-편의점 { background: #E1F5EE; color: #0F6E56; }
+ 
+  .result-info { flex: 1; min-width: 0; }
+  .result-name { font-size: 14px; font-weight: bold; color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .result-addr { font-size: 12px; color: #888; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .benefit { font-size: 12px; color: #E8003D; font-weight: bold; white-space: nowrap; flex-shrink: 0; }
+  .empty, .loading-msg { text-align: center; padding: 40px 0; color: #999; font-size: 14px; }
+</style>
+</head>
+<body>
+ 
+<div class="container">
+  <div class="header">
+    <span class="logo">KT</span>
+    <span class="title">내 동네 멤버십 혜택 찾기</span>
+  </div>
+ 
+  <div class="search-row">
+    <input type="text" id="addrInput" placeholder="동 이름을 입력하세요 (예: 역삼동, 합정동)" />
+    <button id="searchBtn" onclick="doSearch()">검색</button>
+  </div>
+ 
+  <div class="filter-row" id="filterRow">
+    <span class="chip active" data-cat="전체" onclick="filterCat(this)">전체</span>
+    <span class="chip" data-cat="영화" onclick="filterCat(this)">영화관</span>
+    <span class="chip" data-cat="베이커리" onclick="filterCat(this)">베이커리</span>
+    <span class="chip" data-cat="아이스크림" onclick="filterCat(this)">아이스크림</span>
+    <span class="chip" data-cat="커피" onclick="filterCat(this)">카페</span>
+    <span class="chip" data-cat="편의점" onclick="filterCat(this)">편의점</span>
+  </div>
+ 
+  <div id="map"></div>
+ 
+  <div id="resultArea">
+    <div class="empty">동 이름을 입력하고 검색하세요</div>
+  </div>
+</div>
+ 
+<!-- 카카오맵 SDK 불러오기 -->
+<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=287151200f1ba977c2dc8bf090f28f39&libraries=services"></script>
+ 
+<script>
+// ===== KT 멤버십 제휴 브랜드 목록 (여기를 수정하면 검색 브랜드가 바뀝니다) =====
+const PARTNERS = [
+  { brand: 'CGV',        cat: '영화',     benefit: 'VIP 최대 6,000원 할인' },
+  { brand: '롯데시네마',  cat: '영화',     benefit: 'VIP 최대 5,000원 할인' },
+  { brand: '메가박스',    cat: '영화',     benefit: 'VIP 4,000원 할인' },
+  { brand: '파리바게뜨',  cat: '베이커리', benefit: '최대 30% 할인' },
+  { brand: '뚜레쥬르',    cat: '베이커리', benefit: '최대 30% 할인' },
+  { brand: '배스킨라빈스',cat: '아이스크림', benefit: '20% 할인' },
+  { brand: '이디야커피',  cat: '커피',     benefit: '10% 할인' },
+  { brand: 'GS25',       cat: '편의점',   benefit: '1+1 / 2+1 쿠폰' },
+  { brand: 'CU',         cat: '편의점',   benefit: '1+1 / 2+1 쿠폰' },
+];
+ 
+let map, ps, geocoder;
+let markers = [];
+let allResults = [];
+let currentCat = '전체';
+ 
+window.onload = function () {
+  const mapContainer = document.getElementById('map');
+  const mapOption = {
+    center: new kakao.maps.LatLng(37.5665, 126.9780), // 서울시청 기본 좌표
+    level: 5
+  };
+  map = new kakao.maps.Map(mapContainer, mapOption);
+  ps = new kakao.maps.services.Places();
+  geocoder = new kakao.maps.services.Geocoder();
+};
+ 
+function clearMarkers() {
+  markers.forEach(m => m.setMap(null));
+  markers = [];
+}
+ 
+function doSearch() {
+  const input = document.getElementById('addrInput').value.trim();
+  if (!input) { alert('동 이름을 입력해주세요.'); return; }
+ 
+  const searchAddr = input.includes('서울') || input.includes('경기') || input.includes('인천')
+    ? input : '서울 ' + input;
+ 
+  const btn = document.getElementById('searchBtn');
+  btn.disabled = true;
+  btn.textContent = '검색 중...';
+  document.getElementById('resultArea').innerHTML = '<div class="loading-msg">위치를 찾는 중입니다...</div>';
+ 
+  // 1. 동 이름 -> 좌표로 변환 (지오코딩)
+  geocoder.addressSearch(searchAddr, function (result, status) {
+    if (status === kakao.maps.services.Status.OK) {
+      const coords = new kakao.maps.LatLng(result[0].y, result[0].x);
+      map.setCenter(coords);
+      map.setLevel(5);
+      searchAllPartners(coords);
+    } else {
+      // 주소 검색 실패 시 키워드 검색으로 재시도
+      ps.keywordSearch(searchAddr, function (data, status2) {
+        if (status2 === kakao.maps.services.Status.OK && data.length > 0) {
+          const coords = new kakao.maps.LatLng(data[0].y, data[0].x);
+          map.setCenter(coords);
+          map.setLevel(5);
+          searchAllPartners(coords);
+        } else {
+          btn.disabled = false;
+          btn.textContent = '검색';
+          document.getElementById('resultArea').innerHTML =
+            '<div class="empty">"' + input + '" 위치를 찾을 수 없습니다. 동 이름을 다시 확인해주세요.</div>';
+        }
+      });
+    }
+  });
+}
+ 
+function searchAllPartners(coords) {
+  clearMarkers();
+  allResults = [];
+  let completed = 0;
+ 
+  PARTNERS.forEach(partner => {
+    const options = {
+      location: coords,
+      radius: 1500, // 반경 1.5km
+      sort: kakao.maps.services.SortBy.DISTANCE
+    };
+ 
+    ps.keywordSearch(partner.brand, function (data, status) {
+      completed++;
+ 
+      if (status === kakao.maps.services.Status.OK) {
+        data.slice(0, 3).forEach(place => {
+          allResults.push({
+            name: place.place_name,
+            address: place.road_address_name || place.address_name,
+            lat: place.y,
+            lng: place.x,
+            cat: partner.cat,
+            brand: partner.brand,
+            benefit: partner.benefit
+          });
+        });
+      }
+ 
+      if (completed === PARTNERS.length) {
+        finishSearch();
+      }
+    }, options);
+  });
+}
+ 
+function finishSearch() {
+  const btn = document.getElementById('searchBtn');
+  btn.disabled = false;
+  btn.textContent = '검색';
+  renderMarkers();
+  renderResults();
+}
+ 
+function renderMarkers() {
+  clearMarkers();
+  const filtered = currentCat === '전체' ? allResults : allResults.filter(r => r.cat === currentCat);
+ 
+  filtered.forEach(r => {
+    const position = new kakao.maps.LatLng(r.lat, r.lng);
+    const marker = new kakao.maps.Marker({ position, map });
+ 
+    const infowindow = new kakao.maps.InfoWindow({
+      content: `<div style="padding:8px 10px;font-size:12px;width:180px;">
+                  <strong>${r.name}</strong><br>
+                  <span style="color:#E8003D;">${r.benefit}</span>
+                </div>`
+    });
+ 
+    kakao.maps.event.addListener(marker, 'click', function () {
+      infowindow.open(map, marker);
+    });
+ 
+    markers.push(marker);
+  });
+}
+ 
+function filterCat(el) {
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  currentCat = el.dataset.cat;
+  if (allResults.length > 0) {
+    renderMarkers();
+    renderResults();
+  }
+}
+ 
+function renderResults() {
+  const resultArea = document.getElementById('resultArea');
+  const filtered = currentCat === '전체' ? allResults : allResults.filter(r => r.cat === currentCat);
+ 
+  if (filtered.length === 0) {
+    resultArea.innerHTML = '<div class="empty">주변에서 제휴처를 찾지 못했습니다.</div>';
+    return;
+  }
+ 
+  const countEl = `<p class="count-info"><strong>${filtered.length}개</strong>의 제휴처를 찾았습니다</p>`;
+  const cards = filtered.map(r => `
+    <div class="result-card" onclick="focusMarker(${r.lat}, ${r.lng})">
+      <span class="cat-badge cat-${r.cat}">${r.cat}</span>
+      <div class="result-info">
+        <div class="result-name">${r.name}</div>
+        <div class="result-addr">${r.address}</div>
+      </div>
+      <span class="benefit">${r.benefit}</span>
+    </div>
+  `).join('');
+ 
+  resultArea.innerHTML = `<div class="result-list">${countEl}${cards}</div>`;
+}
+ 
+function focusMarker(lat, lng) {
+  const coords = new kakao.maps.LatLng(lat, lng);
+  map.setCenter(coords);
+  map.setLevel(3);
+}
+ 
+// 엔터키로도 검색 가능하게
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('addrInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') doSearch();
+  });
+});
+</script>
+ 
+</body>
+</html>
