@@ -326,7 +326,7 @@ function renderMarkers() {
     const position = new kakao.maps.LatLng(r.lat, r.lng);
 
     const content = document.createElement('div');
-    content.style.cssText = 'position:relative;transform:translate(-50%,-100%);cursor:pointer;';
+    content.style.cssText = 'position:relative;cursor:pointer;';
     const logoUrl = BRAND_LOGOS[r.brand];
     let pinHtml;
     if (logoUrl) {
@@ -358,14 +358,15 @@ function renderMarkers() {
       position: position,
       content: content,
       yAnchor: 1,
-      zIndex: 1
+      xAnchor: 0.5,
+      zIndex: logoUrl ? 100 : 1
     });
     overlay.setMap(map);
 
     // 정보창에 position을 미리 지정 -> 임시 마커 없이 바로 해당 좌표에 열림
     const iw = new kakao.maps.InfoWindow({
       position: position,
-      zIndex: 10,
+      zIndex: 200,
       content: '<div style="padding:8px 10px;font-size:12px;width:180px;"><strong>' + r.name + '</strong><br><span style="color:#E8003D;">' + r.benefit + '</span></div>'
     });
 
