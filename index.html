@@ -146,7 +146,7 @@ const BRAND_PIN_COLORS = {
 
 // 브랜드별 로고 원본 비율이 달라서 개별 보정값 지정 (x,y,width,height,fit)
 const BRAND_LOGO_STYLE = {
-  '스타벅스':   { x: -10, y: -11, width: 60, height: 60, fit: 'slice' }, // 여백 많은 아이콘 -> 더 확대
+  '스타벅스':   { x: -10, y: 3, width: 60, height: 60, fit: 'slice' }, // 여백 많은 아이콘 -> 확대 + 위쪽 잘림 방지로 세로 위치 조정
   '배스킨라빈스': { x: 5,   y: 4,   width: 30, height: 30, fit: 'slice' },
   '던킨':       { x: 9,   y: 14.6, width: 22, height: 8.7, fit: 'meet' } // 원 지름(26)보다 작게 -> 안 잘림
 };
