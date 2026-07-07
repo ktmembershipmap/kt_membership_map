@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang="ko"><head>
+<html lang="ko">
+<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>KT 멤버십 우리동네 혜택 지도</title>
@@ -73,7 +74,7 @@
     <span class="title">우리 동네 멤버십 혜택 찾기</span>
   </div>
   <div class="search-row">
-    <input type="text" id="addrInput" placeholder="동 이름을 입력하세요 (예: 구의동)">
+    <input type="text" id="addrInput" placeholder="동 이름을 입력하세요 (예: 구의동)" />
     <button id="searchBtn" onclick="doSearch()">검색</button>
   </div>
   <div class="tier-row" id="tierRow">
@@ -96,7 +97,7 @@
     <div class="empty">동 이름을 입력하고 검색하세요</div>
   </div>
 </div>
-<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=287151200f1ba977c2dc8bf090f28f39&amp;libraries=services"></script>
+<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=287151200f1ba977c2dc8bf090f28f39&libraries=services"></script>
 <script>
 const PARTNERS = [
   // 일반
@@ -130,21 +131,21 @@ const PARTNERS = [
   { brand: '할리스',       cat: '커피',      benefit: '커피 2잔 ＋ 휘낭시에 2개 세트 무료',  tier: 'VVIP', discountAmount: 12500 },
   { brand: '메가MGC커피',  cat: '커피',      benefit: '아메리카노(ICE/HOT) 2잔 무료',       tier: 'VVIP', discountAmount: 6000 },
 ];
- 
+
 const BRAND_LOGOS = {
   '스타벅스':   'https://image.istarbucks.co.kr/common/img/main/rewards-logo.png',
   '배스킨라빈스': 'https://mblogthumb-phinf.pstatic.net/20160501_237/ppanppane_1462069038100W5NY3_PNG/Untitled-1-14.png?type=w800',
   '던킨':       'https://iprsoftwaremedia.com/285/files/20260/5baa7f2e2cfac254c46e1309_Dunkin%27%20Logo/Dunkin%27%20Logo_3c185c2d-de8c-4c5e-8609-a5685613243d-prv.png'
 };
- 
+
 const BRAND_PIN_COLORS = {
   '스타벅스':   '#00704A',
   '배스킨라빈스': '#E4007C',
   '던킨':       '#FF671F'
 };
- 
+
 let pinIdCounter = 0;
- 
+
 const CAT_COLORS = {
   '영화':      { bg: '#185FA5', text: '#fff' },
   '베이커리':  { bg: '#3B6D11', text: '#fff' },
@@ -153,7 +154,7 @@ const CAT_COLORS = {
   '편의점':    { bg: '#0F6E56', text: '#fff' },
   '외식':      { bg: '#993C1D', text: '#fff' }
 };
- 
+
 const ALLOWED_AREAS = [
   '마포구','은평구','종로구','서대문구','용산구','중구','성북구',
   '강북구','도봉구','노원구','중랑구','광진구',
@@ -161,11 +162,11 @@ const ALLOWED_AREAS = [
   '파주시','연천군','포천시','가평군','양평군',
   '강원도','강원특별자치도'
 ];
- 
+
 function isAllowedArea(addr) {
   return ALLOWED_AREAS.some(area => addr.includes(area));
 }
- 
+
 let map, ps, geocoder;
 let markers = [];
 let allResults = [];
@@ -173,7 +174,7 @@ let currentCat = '전체';
 let currentTier = '전체';
 let openInfoWindow = null;
 let openInfoTarget = null;
- 
+
 window.onload = function () {
   const mapOption = {
     center: new kakao.maps.LatLng(37.5665, 126.9780),
@@ -182,7 +183,7 @@ window.onload = function () {
   map = new kakao.maps.Map(document.getElementById('map'), mapOption);
   ps = new kakao.maps.services.Places();
   geocoder = new kakao.maps.services.Geocoder();
- 
+
   // 지도 빈 공간 클릭 시 열려있던 정보창 닫기
   kakao.maps.event.addListener(map, 'click', function () {
     if (openInfoWindow) {
@@ -192,7 +193,7 @@ window.onload = function () {
     }
   });
 };
- 
+
 function getFilteredResults() {
   return allResults
     .filter(r =>
@@ -201,12 +202,12 @@ function getFilteredResults() {
     )
     .sort((a, b) => (a.tier === 'VVIP' ? 0 : 1) - (b.tier === 'VVIP' ? 0 : 1));
 }
- 
+
 function clearMarkers() {
   markers.forEach(m => m.setMap(null));
   markers = [];
 }
- 
+
 function doSearch() {
   const input = document.getElementById('addrInput').value.trim();
   if (!input) { alert('동 이름을 입력해주세요.'); return; }
@@ -214,14 +215,14 @@ function doSearch() {
   btn.disabled = true;
   btn.textContent = '검색 중...';
   document.getElementById('resultArea').innerHTML = '<div class="loading-msg">위치를 찾는 중입니다...</div>';
- 
+
   const hasRegion = input.includes('서울')||input.includes('경기')||input.includes('인천')||input.includes('강원');
   // 지역명이 없으면 경기/서울/강원 순서로 다 시도 (의정부시/포천시 등 '시' 생략 입력도 커버)
   const candidates = hasRegion ? [input] : [input, '경기 ' + input, '서울 ' + input, '강원 ' + input];
- 
+
   tryGeocode(candidates, 0, btn, input, { foundNotAllowed: false });
 }
- 
+
 function tryGeocode(candidates, idx, btn, originalInput, state) {
   if (idx >= candidates.length) {
     tryKeyword(candidates, 0, btn, originalInput, state);
@@ -242,7 +243,7 @@ function tryGeocode(candidates, idx, btn, originalInput, state) {
     tryGeocode(candidates, idx + 1, btn, originalInput, state);
   });
 }
- 
+
 function tryKeyword(candidates, idx, btn, originalInput, state) {
   if (idx >= candidates.length) {
     if (state.foundNotAllowed) {
@@ -269,13 +270,13 @@ function tryKeyword(candidates, idx, btn, originalInput, state) {
     tryKeyword(candidates, idx + 1, btn, originalInput, state);
   });
 }
- 
+
 function showNotSupported(btn, input) {
   btn.disabled = false; btn.textContent = '검색';
   document.getElementById('resultArea').innerHTML =
     '<div class="empty">현재 서비스 지원 지역이 아닙니다.<br>(서울 일부 지역, 경기 북부, 강원도에서 이용 가능합니다)</div>';
 }
- 
+
 function searchAllPartners(coords) {
   clearMarkers(); allResults = [];
   let completed = 0;
@@ -297,13 +298,13 @@ function searchAllPartners(coords) {
     }, { location: coords, radius: 1500, sort: kakao.maps.services.SortBy.DISTANCE });
   });
 }
- 
+
 function finishSearch() {
   const btn = document.getElementById('searchBtn');
   btn.disabled = false; btn.textContent = '검색';
   renderMarkers(); renderResults(); updateVvipSummary();
 }
- 
+
 function renderMarkers() {
   clearMarkers();
   if (openInfoWindow) {
@@ -312,11 +313,11 @@ function renderMarkers() {
   openInfoWindow = null;
   openInfoTarget = null;
   const filtered = getFilteredResults();
- 
+
   filtered.forEach(r => {
     const color = CAT_COLORS[r.cat] || { bg: '#E8003D', text: '#fff' };
     const position = new kakao.maps.LatLng(r.lat, r.lng);
- 
+
     const content = document.createElement('div');
     content.style.cssText = 'position:relative;transform:translate(-50%,-100%);cursor:pointer;';
     const logoUrl = BRAND_LOGOS[r.brand];
@@ -344,7 +345,7 @@ function renderMarkers() {
     content.innerHTML =
       '<div style="position:absolute;top:-14px;left:-18px;right:-18px;bottom:-10px;"></div>' +
       pinHtml;
- 
+
     const overlay = new kakao.maps.CustomOverlay({
       position: position,
       content: content,
@@ -352,14 +353,14 @@ function renderMarkers() {
       zIndex: 1
     });
     overlay.setMap(map);
- 
+
     // 정보창에 position을 미리 지정 -> 임시 마커 없이 바로 해당 좌표에 열림
     const iw = new kakao.maps.InfoWindow({
       position: position,
       zIndex: 10,
       content: '<div style="padding:8px 10px;font-size:12px;width:180px;"><strong>' + r.name + '</strong><br><span style="color:#E8003D;">' + r.benefit + '</span></div>'
     });
- 
+
     content.addEventListener('click', function (e) {
       e.stopPropagation();
       if (openInfoTarget === content) {
@@ -375,16 +376,16 @@ function renderMarkers() {
       openInfoWindow = iw;
       openInfoTarget = content;
     });
- 
+
     markers.push(overlay);
   });
 }
- 
+
 function updateVvipSummary() {
   const el = document.getElementById('vvipSummary');
   if (!el) return;
   const visible = getFilteredResults().filter(r => r.tier === 'VVIP' && r.discountAmount);
- 
+
   const byBrand = {};
   visible.forEach(r => {
     if (!byBrand[r.brand] || r.discountAmount > byBrand[r.brand]) {
@@ -392,7 +393,7 @@ function updateVvipSummary() {
     }
   });
   const top3 = Object.entries(byBrand).sort((a, b) => b[1] - a[1]).slice(0, 3);
- 
+
   if (top3.length === 0) {
     el.classList.remove('show');
     el.innerHTML = '';
@@ -403,21 +404,21 @@ function updateVvipSummary() {
   el.innerHTML = '<strong>' + names + '</strong> 등 이용시 월 VVIP 혜택금액은 최소 ' + minOfTop3.toLocaleString() + '원입니다.';
   el.classList.add('show');
 }
- 
+
 function filterCat(el) {
   document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
   el.classList.add('active');
   currentCat = el.dataset.cat;
   if (allResults.length > 0) { renderMarkers(); renderResults(); updateVvipSummary(); }
 }
- 
+
 function filterTier(el) {
   document.querySelectorAll('.tier-chip').forEach(c => c.classList.remove('active'));
   el.classList.add('active');
   currentTier = el.dataset.tier;
   if (allResults.length > 0) { renderMarkers(); renderResults(); updateVvipSummary(); }
 }
- 
+
 function renderResults() {
   const resultArea = document.getElementById('resultArea');
   const filtered = getFilteredResults();
@@ -433,18 +434,17 @@ function renderResults() {
       + '<span class="benefit">' + r.benefit + '</span></div>'
     ).join('') + '</div>';
 }
- 
+
 function focusMarker(lat, lng) {
   map.setCenter(new kakao.maps.LatLng(lat, lng));
   map.setLevel(3);
 }
- 
+
 document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('addrInput').addEventListener('keypress', function(e) {
     if (e.key === 'Enter') doSearch();
   });
 });
 </script>
- 
- 
-</body></html>
+</body>
+</html>
