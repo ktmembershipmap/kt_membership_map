@@ -205,7 +205,7 @@ function getFilteredResults() {
   return allResults
     .filter(r =>
       (currentCat === '전체' || r.cat === currentCat) &&
-      (currentTier === '전체' || r.tier === currentTier)
+      (currentTier === '전체' || r.tiers.includes(currentTier))
     )
     .sort((a, b) => (a.tier === 'VVIP' ? 0 : 1) - (b.tier === 'VVIP' ? 0 : 1));
 }
@@ -287,21 +287,44 @@ function showNotSupported(btn, input) {
 function searchAllPartners(coords) {
   clearMarkers(); allResults = [];
   let completed = 0;
+  const merged = new Map(); // key: kakao place id -> 병합된 매장 정보
+
   PARTNERS.forEach(partner => {
     ps.keywordSearch(partner.brand, function(data, status) {
       completed++;
       if (status === kakao.maps.services.Status.OK) {
         data.slice(0, 3).forEach(place => {
-          allResults.push({
-            name: place.place_name,
-            address: place.road_address_name || place.address_name,
-            lat: place.y, lng: place.x,
-            cat: partner.cat, brand: partner.brand, benefit: partner.benefit, tier: partner.tier,
-            discountAmount: partner.discountAmount
-          });
+          const key = place.id;
+          const entry = { tier: partner.tier, benefit: partner.benefit, discountAmount: partner.discountAmount };
+          if (merged.has(key)) {
+            merged.get(key).entries.push(entry);
+          } else {
+            merged.set(key, {
+              name: place.place_name,
+              address: place.road_address_name || place.address_name,
+              lat: place.y, lng: place.x,
+              cat: partner.cat, brand: partner.brand,
+              entries: [entry]
+            });
+          }
         });
       }
-      if (completed === PARTNERS.length) finishSearch();
+      if (completed === PARTNERS.length) {
+        allResults = Array.from(merged.values()).map(m => {
+          const hasVVIP = m.entries.some(e => e.tier === 'VVIP');
+          const primary = m.entries.find(e => e.tier === (hasVVIP ? 'VVIP' : '일반')) || m.entries[0];
+          return {
+            name: m.name, address: m.address, lat: m.lat, lng: m.lng,
+            cat: m.cat, brand: m.brand,
+            tier: primary.tier,
+            tiers: m.entries.map(e => e.tier),
+            benefit: primary.benefit,
+            discountAmount: primary.discountAmount,
+            entries: m.entries
+          };
+        });
+        finishSearch();
+      }
     }, { location: coords, radius: 1500, sort: kakao.maps.services.SortBy.DISTANCE });
   });
 }
@@ -367,7 +390,14 @@ function renderMarkers() {
     const iw = new kakao.maps.InfoWindow({
       position: position,
       zIndex: 200,
-      content: '<div style="padding:8px 10px;font-size:12px;width:180px;"><strong>' + r.name + '</strong><br><span style="color:#E8003D;">' + r.benefit + '</span></div>'
+      content: '<div style="padding:8px 10px;font-size:12px;width:190px;"><strong>' + r.name + '</strong>' +
+        r.entries.map(function(e) {
+          const tag = e.tier === 'VVIP'
+            ? '<span style="font-size:9px;font-weight:bold;color:#8a5a00;background:#FFF3D6;padding:1px 5px;border-radius:6px;margin-right:4px;">VVIP</span>'
+            : '<span style="font-size:9px;font-weight:bold;color:#555;background:#eee;padding:1px 5px;border-radius:6px;margin-right:4px;">일반</span>';
+          return '<div style="margin-top:5px;">' + tag + '<span style="color:#E8003D;">' + e.benefit + '</span></div>';
+        }).join('') +
+        '</div>',
     });
 
     content.addEventListener('click', function (e) {
