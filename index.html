@@ -102,6 +102,7 @@
 const PARTNERS = [
   // 일반
   { brand: 'CGV',          cat: '영화',      benefit: '최대 5천원 할인(동반 4인 추가할인) / 매점콤보 3천원 할인', tier: '일반' },
+  { brand: '롯데시네마',   cat: '영화',      benefit: '최대 5,000원 할인',                 tier: '일반' },
   { brand: '메가박스',     cat: '영화',      benefit: '최대 6천원 할인(본인 동반 4인) / 매점콤보 2천원 할인',     tier: '일반' },
   { brand: '파리바게뜨',   cat: '베이커리',  benefit: '1,000원당 50원 이상 할인',                          tier: '일반' },
   { brand: '뚜레쥬르',     cat: '베이커리',  benefit: '1,000원당 100원 이상 할인',                         tier: '일반' },
@@ -112,7 +113,7 @@ const PARTNERS = [
   { brand: '공차',         cat: '커피',      benefit: '제조음료 구매 시 10% 할인',                          tier: '일반' },
   { brand: '라그릴리아',   cat: '외식',      benefit: '5% 이상 할인',                                      tier: '일반' },
   { brand: '샐러디',       cat: '외식',      benefit: '10% 할인쿠폰(최대 2만원)',                          tier: '일반' },
-  { brand: '도미노피자',   cat: '외식',      benefit: '15% 이상 할인',                                     tier: '일반' },
+  { brand: '도미노피자',   cat: '외식',      benefit: '15% 할인',                                     tier: '일반' },
   { brand: '아웃백',       cat: '외식',      benefit: '5% 이상 할인',                                      tier: '일반' },
   { brand: '파파존스피자', cat: '외식',      benefit: '15% 이상 할인',                                     tier: '일반' },
   { brand: 'VIPS',         cat: '외식',      benefit: '5% 이상 할인',                                      tier: '일반' },
@@ -124,12 +125,13 @@ const PARTNERS = [
   { brand: '이마트24',     cat: '편의점',    benefit: '1,000원당 50원 이상 할인',                          tier: '일반' },
   { brand: 'CU',           cat: '편의점',    benefit: '아침 간편식류 1,000원당 200원 할인',                 tier: '일반' },
   // VVIP
-  { brand: '롯데시네마',   cat: '영화',      benefit: '영화 무료 (생일 당월 팝콘 포함)',    tier: 'VVIP', discountAmount: 19000 },
+  { brand: '롯데시네마',   cat: '영화',      benefit: '영화 예매 무료',                     tier: 'VVIP', discountAmount: 14000 },
   { brand: '던킨',         cat: '베이커리',  benefit: '아메리카노(S)＋글레이즈드 무료',      tier: 'VVIP', discountAmount: 5600 },
   { brand: '배스킨라빈스', cat: '아이스크림', benefit: '레디팩 무료 / 아이스크림 6종 50%',   tier: 'VVIP', discountAmount: 10800 },
   { brand: '스타벅스',     cat: '커피',      benefit: '아메리카노(S) 무료 or 4천원 할인',    tier: 'VVIP', discountAmount: 4000 },
   { brand: '할리스',       cat: '커피',      benefit: '커피 2잔 ＋ 휘낭시에 2개 세트 무료',  tier: 'VVIP', discountAmount: 14400 },
   { brand: '메가MGC커피',  cat: '커피',      benefit: '아메리카노(ICE/HOT) 2잔 무료',       tier: 'VVIP', discountAmount: 4000 },
+  { brand: '도미노피자',   cat: '외식',      benefit: '20% 할인',                          tier: 'VVIP', discountAmount: 6000 },
 ];
 
 const BRAND_LOGOS = {
@@ -438,9 +440,8 @@ function updateVvipSummary() {
     el.innerHTML = '';
     return;
   }
-  const minOfTop3 = top3.reduce((sum, t) => sum + t[1], 0);
-  const names = top3.map(t => t[0]).join(', ');
-  el.innerHTML = '<strong>' + names + '</strong> 등 이용시 월 VVIP 혜택금액은 최소 ' + minOfTop3.toLocaleString() + '원입니다.';
+  const names = top3.map(function(t) { return t[0] + ' ' + t[1].toLocaleString() + '원'; }).join(', ');
+  el.innerHTML = '<strong>' + names + '</strong> 등 VVIP 혜택 이용 가능 (월 1회)';
   el.classList.add('show');
 }
 
