@@ -137,20 +137,23 @@ const PARTNERS = [
 const BRAND_LOGOS = {
   '스타벅스':   'https://image.istarbucks.co.kr/common/img/main/rewards-logo.png',
   '배스킨라빈스': 'https://mblogthumb-phinf.pstatic.net/20160501_237/ppanppane_1462069038100W5NY3_PNG/Untitled-1-14.png?type=w800',
-  '던킨':       'https://iprsoftwaremedia.com/285/files/20260/5baa7f2e2cfac254c46e1309_Dunkin%27%20Logo/Dunkin%27%20Logo_3c185c2d-de8c-4c5e-8609-a5685613243d-prv.png'
+  '던킨':       'https://iprsoftwaremedia.com/285/files/20260/5baa7f2e2cfac254c46e1309_Dunkin%27%20Logo/Dunkin%27%20Logo_3c185c2d-de8c-4c5e-8609-a5685613243d-prv.png',
+  '도미노피자':  'https://upload.wikimedia.org/wikipedia/commons/7/74/Dominos_pizza_logo.svg'
 };
 
 const BRAND_PIN_COLORS = {
   '스타벅스':   '#00704A',
   '배스킨라빈스': '#E4007C',
-  '던킨':       '#FF671F'
+  '던킨':       '#FF671F',
+  '도미노피자':  '#0078AE'
 };
 
 // 브랜드별 로고 원본 비율이 달라서 개별 보정값 지정 (x,y,width,height,fit)
 const BRAND_LOGO_STYLE = {
   '스타벅스':   { x: -10, y: 3, width: 60, height: 60, fit: 'slice' }, // 여백 많은 아이콘 -> 확대 + 위쪽 잘림 방지로 세로 위치 조정
   '배스킨라빈스': { x: 5,   y: 4,   width: 30, height: 30, fit: 'slice' },
-  '던킨':       { x: 9,   y: 14.6, width: 22, height: 8.7, fit: 'meet' } // 원 지름(26)보다 작게 -> 안 잘림
+  '던킨':       { x: 9,   y: 14.6, width: 22, height: 8.7, fit: 'meet' }, // 원 지름(26)보다 작게 -> 안 잘림
+  '도미노피자':  { x: 3,   y: 2,   width: 34, height: 34, fit: 'slice' }
 };
 
 let pinIdCounter = 0;
