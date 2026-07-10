@@ -152,7 +152,7 @@ const BRAND_PIN_COLORS = {
 const BRAND_LOGO_STYLE = {
   '스타벅스':   { x: -10, y: 3, width: 60, height: 60, fit: 'slice' }, // 여백 많은 아이콘 -> 확대 + 위쪽 잘림 방지로 세로 위치 조정
   '배스킨라빈스': { x: 5,   y: 4,   width: 30, height: 30, fit: 'slice' },
-  '던킨':       { x: 7.5, y: 14.05, width: 25, height: 9.9, fit: 'meet' }, // 원 지름(26)에 최대한 맞춰 확대
+  '던킨':       { x: 0, y: 11, width: 40, height: 16, fit: 'slice' }, // 클리핑 원 활용해 확대 (넘침은 자동 크롭)
   '도미노피자':  { x: 3,   y: 2,   width: 34, height: 34, fit: 'slice' }
 };
 
