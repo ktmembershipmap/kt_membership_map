@@ -107,7 +107,7 @@ const PARTNERS = [
   { brand: '파리바게뜨',   cat: '베이커리',  benefit: '1,000원당 50원 이상 할인',                          tier: '일반' },
   { brand: '뚜레쥬르',     cat: '베이커리',  benefit: '1,000원당 100원 이상 할인',                         tier: '일반' },
   { brand: '파리크라상',   cat: '베이커리',  benefit: '1,000원당 50원 이상 할인',                          tier: '일반' },
-  { brand: '배스킨라빈스', cat: '아이스크림', benefit: '50% 할인(최대 5천원)', tier: '일반' },
+  { brand: '배스킨라빈스', cat: '아이스크림', benefit: '[고객보답] 50% 할인(최대 5천원) / [생일] 케이크 4천원 할인', tier: '일반' },
   { brand: '메가MGC커피',  cat: '커피',      benefit: 'ICE 아메리카노 구매 시 500원 할인(3장)',             tier: '일반' },
   { brand: '스타벅스',     cat: '커피',      benefit: '[상시] 사이즈업',                                   tier: '일반' },
   { brand: '공차',         cat: '커피',      benefit: '제조음료 구매 시 10% 할인',                          tier: '일반' },
@@ -298,7 +298,10 @@ function searchAllPartners(coords) {
       completed++;
       if (status === kakao.maps.services.Status.OK) {
         data
-          .filter(place => place.place_name.trim().startsWith(partner.brand))
+          .filter(place => {
+            const name = place.place_name.trim();
+            return name === partner.brand || name.startsWith(partner.brand + ' ');
+          })
           .slice(0, 3)
           .forEach(place => {
           const key = place.id;
