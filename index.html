@@ -57,7 +57,7 @@
   .result-info { flex: 1; min-width: 0; }
   .result-name { font-size: 14px; font-weight: bold; color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .result-addr { font-size: 12px; color: #888; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .benefit { font-size: 12px; color: #E8003D; font-weight: bold; white-space: normal; text-align: right; flex-shrink: 0; max-width: 150px; line-height: 1.5; }
+  .benefit { font-size: 12px; color: #E8003D; font-weight: bold; white-space: normal; text-align: right; flex-shrink: 0; max-width: 220px; line-height: 1.5; }
   .empty, .loading-msg { text-align: center; padding: 40px 0; color: #999; font-size: 14px; }
   .vvip-summary {
     display: none; font-size: 13px; color: #8a5a00; background: #FFF3D6;
@@ -487,9 +487,11 @@ function renderResults() {
       + '<span class="cat-badge cat-' + r.cat + '">' + r.cat + (r.tier === 'VVIP' ? '<span class="vvip-tag">VVIP</span>' : '') + '</span>'
       + '<div class="result-info"><div class="result-name">' + r.name + '</div>'
       + '<div class="result-addr">' + r.address + '</div></div>'
-      + '<span class="benefit">' + r.entries.map(function(e) {
-          return '[' + e.tier + '] ' + e.benefit;
-        }).join(' ') + '</span></div>'
+      + '<span class="benefit">' + (
+          (r.entries.length === 1 && r.entries[0].tier === '일반')
+            ? r.entries[0].benefit
+            : r.entries.map(function(e) { return '[' + e.tier + '] ' + e.benefit; }).join(' ')
+        ) + '</span></div>'
     ).join('') + '</div>';
 }
 
