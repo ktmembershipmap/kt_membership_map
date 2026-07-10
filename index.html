@@ -370,6 +370,14 @@ function renderMarkers() {
         '<circle cx="2.5" cy="5" r="1.6" fill="#fff"/>' +
         '</g>' +
         '</svg>';
+    } else if (r.brand === '던킨') {
+      // 외부 이미지 의존 없이 벡터로 직접 그린 던킨 로고 (DD 모노그램)
+      pinHtml =
+        '<svg width="40" height="50" viewBox="0 0 40 50" style="display:block;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));">' +
+        '<path d="M20 0C9 0 0 8 0 19c0 14 20 31 20 31s20-17 20-31C40 8 31 0 20 0z" fill="#FF671F"/>' +
+        '<circle cx="20" cy="19" r="14" fill="#fff"/>' +
+        '<text x="20" y="24" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" font-weight="900" fill="#FF671F">DD</text>' +
+        '</svg>';
     } else if (logoUrl) {
       const pinColor = BRAND_PIN_COLORS[r.brand] || color.bg;
       const style = BRAND_LOGO_STYLE[r.brand] || { x: 5, y: 4, width: 30, height: 30, fit: 'slice' };
