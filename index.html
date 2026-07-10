@@ -168,8 +168,7 @@ const CAT_COLORS = {
 };
 
 const ALLOWED_AREAS = [
-  '마포구','은평구','종로구','서대문구','용산구','중구','성북구',
-  '강북구','도봉구','노원구','중랑구','광진구','성동구','동대문구',
+  '서울',
   '고양시','남양주시','구리시','의정부시','양주시','동두천시',
   '파주시','연천군','포천시','가평군','양평군',
   '강원도','강원특별자치도'
@@ -286,7 +285,7 @@ function tryKeyword(candidates, idx, btn, originalInput, state) {
 function showNotSupported(btn, input) {
   btn.disabled = false; btn.textContent = '검색';
   document.getElementById('resultArea').innerHTML =
-    '<div class="empty">현재 서비스 지원 지역이 아닙니다.<br>(서울 일부 지역, 경기 북부, 강원도에서 이용 가능합니다)</div>';
+    '<div class="empty">현재 서비스 지원 지역이 아닙니다.<br>(서울 전역, 경기 북부, 강원도에서 이용 가능합니다)</div>';
 }
 
 function searchAllPartners(coords) {
